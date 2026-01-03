@@ -253,99 +253,13 @@ def sort_with_indices(numbers):
     original_indices = [item[0]+1 for item in sorted_indexed_numbers]
     return sorted_numbers, original_indices
 
+def draw_scatter_correlation(arr1, arr2, pic_name, label, title):
+    print("draw_scatter_correlation")
+
 if __name__ == '__main__':
     start = time.time()
     print('ᕕ( ᐛ )ᕗ')
     print('==========程序开始运行==========')
-    # 读入&处理数据----------------------------------------------------------------
-    res_path = "/home/sunming/data5/hongyt/code/sect_eof/res_eof/1920-2005/"
-    pc = xr.open_dataarray(res_path+'pcs.nc')
-    e_index = xr.open_dataarray(res_path+'e_index.nc')
-    c_index = xr.open_dataarray(res_path+'c_index.nc')
-
-    pc1 = pc[:, :, 0]
-    pc2 = pc[:, :, 1]
-    pc1_DJF = sel_DJF(pc1)
-    pc2_DJF = sel_DJF(pc2)
-    # e_index_DJF = sel_DJF(e_index)
-    # c_index_DJF = sel_DJF(c_index)
-    e_index_DJF = DJF_mean(e_index)
-    c_index_DJF = DJF_mean(c_index)
-    print(e_index_DJF.shape)
-
-    # 修改项, 时间范围
-    start_year="1920"
-    end_year="2005"
-    time_range=start_year+"-"+end_year
-    e_index = e_index.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    c_index = c_index.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    e_index_DJF = e_index_DJF.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    c_index_DJF = c_index_DJF.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    pc1 = pc1.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    pc2 = pc2.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    pc1_DJF = pc1_DJF.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    pc2_DJF = pc2_DJF.loc[:, start_year+"-01-01":end_year+"-12-31"]
-    
-
-    # 画图--------------------------------------------------------------------------
-
-    num_mix_list = []
-    num_EN_mix_list = []
-    num_LN_mix_list = []
-    num_super_list = []
-    num_EPE_list = []
-    num_CPL_list = []
-
-    draw_path = "/home/sunming/data5/hongyt/code/quadratic_reg/draw_scatter_CE-index_DJF_mean/elnino_only/"
-    #draw_sctter_CE-index/"
-    for i in range(e_index.shape[0]):
-        num_EPE2, num_EPE, num_CPL = draw_scatter(e_index[i], c_index[i], e_index_DJF[i], c_index_DJF[i], draw_path+"r"+str(i+1)+"i1p1", ['E-index', 'C-index'])
-        num_super_list.append(num_EPE2)
-        num_EPE_list.append(num_EPE)
-        num_CPL_list.append(num_CPL)
-        e_index1 = e_index_DJF[i]
-        c_index1 = c_index_DJF[i]
-        num_EN_mix = len(e_index1[(e_index1>1) & (c_index1>1)])
-        num_LN_mix = len(e_index1[(e_index1<-1) & (c_index1<-1)])
-        print(i+1)
-        print("EN mix:", num_EN_mix)
-        print("LN mix:", num_LN_mix)
-        num_mix = num_EN_mix+num_LN_mix
-        num_mix_list.append(num_mix)
-        num_EN_mix_list.append(num_EN_mix)
-        num_LN_mix_list.append(num_LN_mix)
-
-    # values, index = sort_with_indices(num_super_list)
-    # print(values)
-    # print(index)
-    # num_super = xr.DataArray(num_super_list, dims=('member'), coords={'member': np.arange(1, 41, 1)})
-    # num_super.to_dataset(name='num_super').to_netcdf('/home/sunming/data5/hongyt/data/sel_CESM1-LENS/num_super.nc')
-    # num_EPE = xr.DataArray(num_EPE_list, dims=('member'), coords={'member': np.arange(1, 41, 1)})
-    # num_EPE.to_dataset(name='num_EPE').to_netcdf('/home/sunming/data5/hongyt/data/sel_CESM1-LENS/num_EPE.nc')
-    # num_CPL = xr.DataArray(num_CPL_list, dims=('member'), coords={'member': np.arange(1, 41, 1)})
-    # num_CPL.to_dataset(name='num_CPL').to_netcdf('/home/sunming/data5/hongyt/data/sel_CESM1-LENS/num_CPL.nc')
-
-    # res_path = "/home/sunming/data5/hongyt/code/quadratic_reg/data/"
-    # draw_path = "/home/sunming/data5/hongyt/code/quadratic_reg/draw_confusion_alpha/"
-    # alpha = xr.open_dataset(res_path+"alpha_DJF.nc").alpha
-    # print(alpha.shape)
-    # print(len(num_mix_list))
-    # lim1 = [4, 36, -0.6, 0]
-    # tick1 = [np.arange(4, 40, 4), np.arange(-0.6, 0.2, 0.2)]
-    # draw_scatter1(num_mix_list, alpha, draw_path+"both_confusion.png", ['Num of confusion', 'Alpha'], "El Nino & La Nina", lim1, tick1)
-    # lim2 = [0, 24, -0.6, 0]
-    # tick2 = [np.arange(0, 28, 4), np.arange(-0.6, 0.2, 0.2)]
-    # draw_scatter1(num_EN_mix_list, alpha, draw_path+"EN_confusion.png", ['Num of confusion', 'Alpha'], "El Nino", lim2, tick2)
-    # lim3 = [-1, 16, -0.6, 0]
-    # tick3 = [np.arange(0, 20, 4), np.arange(-0.6, 0.2, 0.2)]
-    # draw_scatter1(num_LN_mix_list, alpha, draw_path+"LN_confusion.png", ['Num of confusion', 'Alpha'], "La Nina", lim3, tick3)
-
-
-    # # 绘图(skewness/alpha 散点)========================================================
-    # sk_e_obs = 1.5377629482212403
-    # sk_c_obs = -0.4470542635570995
-    # alpha_obs = -0.3070994
-    # alpha_DJF_obs = -0.3787121
 
 
     print('==========程序运行结束==========')
