@@ -1,2 +1,2 @@
 # meteo_plot
-Meteorological Mapping Toolbox 
+Meteorological Plotting Toolbox 
