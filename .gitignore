@@ -1,1 +1,21 @@
+# 忽略 Python 缓存
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 忽略临时文件
+.DS_Store
+.ipynb_checkpoints/
+
+# 忽略气象数据文件（防止不小心上传几个G的数据）
+*.nc
+*.grib
+*.grib2
+*.data
+*.gz
+
+# 忽略绘图输出
+*.png
+*.pdf
+*.jpg
