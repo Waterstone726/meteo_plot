@@ -53,7 +53,7 @@ def draw_scatter_correlation_single(ax, arr1, arr2, label=("X", "Y"), title="",
         # 拟合直线
         x_range = np.linspace(np.min(x_c), np.max(x_c), 100)
         y_fit = slope * x_range + intercept
-        ax.plot(x_range, y_fit, color="#b91f24", zorder=2, linewidth=1.5)
+        ax.plot(x_range, y_fit, color="#b82c25", zorder=2, linewidth=1.5)
 
         # 3. 置信区间 (CI)
         if draw_ci:
@@ -61,7 +61,7 @@ def draw_scatter_correlation_single(ax, arr1, arr2, label=("X", "Y"), title="",
             resid = y_c - (slope * x_c + intercept)
             s_err = np.sqrt(np.sum(resid**2) / (len(x_c) - 2))
             ci = t_inv * s_err * np.sqrt(1/len(x_c) + (x_range - np.mean(x_c))**2 / np.sum((x_c - np.mean(x_c))**2))
-            ax.fill_between(x_range, y_fit - ci, y_fit + ci, color="#b91f24", alpha=0.15, edgecolor='none', zorder=1)
+            ax.fill_between(x_range, y_fit - ci, y_fit + ci, color="#b82c25", alpha=0.15, edgecolor='none', zorder=1)
 
         # 4. 文本布局 (灵活位置 + 星号标注)
         info_text = f"R = {r_value:.2f}{stars}\nSlope = {slope:.2e}{stars}"
@@ -71,7 +71,7 @@ def draw_scatter_correlation_single(ax, arr1, arr2, label=("X", "Y"), title="",
 
     # 5. 散点质感优化 (保留原本颜色，增加边缘色)
     scatter_defaults = {'s': 20, 'c': '#a7a7a7', 'edgecolors': 'white', 'linewidths': 0.5, 'alpha': 0.8, 'zorder': 3}
-    if order_text: scatter_defaults['c'] = "#66ece1"
+    if order_text: scatter_defaults['c'] = "#22a6be"
     scatter_defaults.update(kwargs) # 允许外部覆盖
     
     ax.scatter(x, y, **scatter_defaults)
@@ -82,7 +82,7 @@ def draw_scatter_correlation_single(ax, arr1, arr2, label=("X", "Y"), title="",
         offset = y_span * 0.02
         for i in range(len(x)):
             if np.isfinite(x[i]) and np.isfinite(y[i]):
-                ax.text(x[i], y[i] + offset, i+1, fontsize=9, color="dimgray", 
+                ax.text(x[i], y[i] + offset, i+1, fontsize=9, color="#6D6C6C", 
                         weight="bold", style="italic", ha='center', va='bottom')
 
     # 7. 基础修饰 (继承你原本的要求)
