@@ -49,6 +49,7 @@ def draw_scatter_correlation_single(ax, arr1, arr2, label=("X", "Y"), title="",
     if len(x_c) > 1:
         slope, intercept, r_value, p_value, std_err = linregress(x_c, y_c)
         stars = get_sig_stars(p_value)
+        print(p_value)
         
         # 拟合直线
         x_range = np.linspace(np.min(x_c), np.max(x_c), 100)
