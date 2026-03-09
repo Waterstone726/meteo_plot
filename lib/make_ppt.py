@@ -1,5 +1,6 @@
 import os
 import math
+import re  # 新增：引入正则表达式库
 from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -105,7 +106,7 @@ class PPTBuilder:
         slot_h = (avail_h - (rows - 1) * self.IMG_GAP) / rows
 
         for idx, img_path in enumerate(image_paths):
-            # 防止图片数量超过网格 (虽然外部逻辑应该控制分页，但这里做个保护)
+            # 防止图片数量超过网格
             if idx >= cols * rows:
                 break
                 
@@ -117,30 +118,31 @@ class PPTBuilder:
             
             self._place_image_in_slot(slide, img_path, x, y, slot_w, slot_h)
 
-    def search_images(self, base_dir, sub_folder, keywords, models=None, suffix=".png"):
+    def search_images(self, base_dir, sub_folder, patterns=None, model=None, suffix=".png", use_regex=True, model_delimiter="_"):
         """
-        通用搜图逻辑
+        通用搜图逻辑 (完全体)
         :param base_dir: 根目录
-        :param sub_folder: 目标子文件夹 (如 res_ToE...)
-        :param keywords: 必须包含的字符串列表 (AND 关系)
-        :param models: 如果提供模型列表，会优先去子文件夹找 {base}/{sub}/{model}
-        :return: 图片路径列表
+        :param sub_folder: 目标子文件夹
+        :param patterns: 匹配模式列表 (OR 关系)
+        :param model: 模型名称
+        :param suffix: 文件后缀
+        :param use_regex: 是否将 patterns 视为正则表达式
+        :param model_delimiter: 模型名与后续字符的连接符（如 "_", "-", 甚至是 ""）
         """
         found_images = []
-        
-        # 确定搜索路径列表
+        if patterns is None:
+            patterns = []
+            
         search_dirs = []
         full_sub_path = os.path.join(base_dir, sub_folder)
         
-        # 策略：如果有 model 列表，尝试进入模型子目录；否则直接搜 sub_folder
-        if models:
-            for m in models:
-                p = os.path.join(full_sub_path, m)
-                if os.path.exists(p):
-                    search_dirs.append(p)
-                elif os.path.exists(full_sub_path):
-                     # 如果模型文件夹不存在，回退到父级目录搜索该模型文件
-                     search_dirs.append(full_sub_path)
+        # 策略：如果有 model，尝试进入模型子目录；否则直接搜 sub_folder
+        if model:
+            p = os.path.join(full_sub_path, model)
+            if os.path.exists(p):
+                search_dirs.append(p)
+            elif os.path.exists(full_sub_path):
+                 search_dirs.append(full_sub_path)
         else:
             if os.path.exists(full_sub_path):
                 search_dirs.append(full_sub_path)
@@ -155,18 +157,28 @@ class PPTBuilder:
             for f in files:
                 if not f.endswith(suffix): continue
                 
-                # 检查所有关键字
-                match = True
-                for k in keywords:
-                    if k not in f:
-                        match = False
-                        break
+                # 【核心逻辑1】：解决重复索引。利用外部传入的 model_delimiter 组合成前缀匹配
+                if model and not f.startswith(f"{model}{model_delimiter}"):
+                    continue
                 
-                # 如果指定了模型，文件名必须包含当前路径对应的模型名吗？
-                # 这里简化处理：如果在 search_dirs 里找到了文件，且满足 keywords 即可
-                # 你可以在 keywords 里传入 model name 来实现特定模型的筛选
+                # 如果没有设定 patterns，并且走到这一步说明模型前缀匹配成功，直接添加
+                if not patterns:
+                    found_images.append(os.path.join(d, f))
+                    continue
                 
-                if match:
+                # 【核心逻辑2】：利用 OR 逻辑和正则表达式匹配关键字
+                is_match = False
+                for p_str in patterns:
+                    if use_regex:
+                        if re.search(p_str, f):
+                            is_match = True
+                            break
+                    else:
+                        if p_str in f:
+                            is_match = True
+                            break
+                
+                if is_match:
                     found_images.append(os.path.join(d, f))
                     
         return found_images
@@ -186,32 +198,40 @@ class PPTBuilder:
                 self.add_section_cover(section_name)
                 print(f"\n--- 处理章节: {section_name} ---")
 
-            # 2. 获取配置
+            # 2. 获取配置（暴露核心接口给外部 tasks 配置）
             base_dir = task['base_dir']
             folder = task['folder']
-            patterns = task.get('patterns', []) # 必选过滤词
-            models = task.get('models', [])     # 可选：按模型顺序找
+            patterns = task.get('patterns', []) 
+            models = task.get('models', [])     
+            use_regex = task.get('use_regex', True)             # 默认开启正则
+            model_delimiter = task.get('model_delimiter', "_")  # 默认使用 "_" 作为分隔符
             cols = task.get('cols', 2)
             rows = task.get('rows', 1)
             
             # 3. 收集图片
-            # 这里有两种模式：
-            # 模式A: 按模型列表循环 (保证顺序: Model A 的图, Model B 的图...)
-            # 模式B: 直接搜索文件夹所有符合条件的图
-            
             all_images = []
             
             if models:
                 for model in models:
-                    # 搜索时将 model 也作为关键字，确保精确匹配
-                    # 注意：patterns + [model]
-                    imgs = self.search_images(base_dir, folder, patterns + [model], models=[model])
+                    # 将正则开关和分隔符一起传给搜图核心函数
+                    imgs = self.search_images(
+                        base_dir, folder, 
+                        patterns=patterns, 
+                        model=model, 
+                        use_regex=use_regex, 
+                        model_delimiter=model_delimiter
+                    )
                     all_images.extend(imgs)
             else:
-                all_images = self.search_images(base_dir, folder, patterns)
+                all_images = self.search_images(
+                    base_dir, folder, 
+                    patterns=patterns, 
+                    use_regex=use_regex, 
+                    model_delimiter=model_delimiter
+                )
 
             if not all_images:
-                print(f"   [警告] 未找到图片，跳过。关键字: {patterns}")
+                print(f"   [警告] 未找到图片，跳过。条件 -> Folder: {folder}, Patterns: {patterns}")
                 continue
 
             # 4. 分页绘制
